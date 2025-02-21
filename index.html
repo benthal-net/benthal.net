@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Benthal Networks</title>
+  <style>
+    /* Reset and base styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+    /* Canvas noise style */
+    #noiseCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: -1;
+    }
+    /* Top Navigation Bar */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 15px 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.7);
+      z-index: 10;
+    }
+    nav ul {
+      list-style: none;
+      display: flex;
+    }
+    nav ul li {
+      margin-right: 20px;
+    }
+    nav ul li a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 16px;
+    }
+    /* Container for centered content */
+    .container {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      flex-direction: column;
+    }
+    /* Subtle glitch effect for the main text */
+    .glitch {
+      font-size: 60px;
+      font-weight: bold;
+      position: relative;
+      color: #fff;
+    }
+    .glitch::before,
+    .glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.6;
+    }
+    .glitch::before {
+      left: 1px;
+      text-shadow: -1px 0 red;
+      clip: rect(0, 900px, 0, 0);
+      animation: glitch-anim 2s infinite linear alternate-reverse;
+    }
+    .glitch::after {
+      left: -1px;
+      text-shadow: -1px 0 blue;
+      clip: rect(0, 900px, 0, 0);
+      animation: glitch-anim2 3s infinite linear alternate-reverse;
+    }
+    @keyframes glitch-anim {
+      0%   { clip: rect(5px, 9999px, 10px, 0); transform: translate(1px, -1px); }
+      20%  { clip: rect(30px, 9999px, 35px, 0); transform: translate(-1px, 1px); }
+      40%  { clip: rect(10px, 9999px, 15px, 0); transform: translate(1px, 1px); }
+      60%  { clip: rect(35px, 9999px, 40px, 0); transform: translate(-1px, -1px); }
+      80%  { clip: rect(20px, 9999px, 25px, 0); transform: translate(1px, -1px); }
+      100% { clip: rect(5px, 9999px, 10px, 0); transform: translate(-1px, 1px); }
+    }
+    @keyframes glitch-anim2 {
+      0%   { clip: rect(5px, 9999px, 10px, 0); transform: translate(-1px, 1px); }
+      20%  { clip: rect(20px, 9999px, 25px, 0); transform: translate(1px, -1px); }
+      40%  { clip: rect(35px, 9999px, 40px, 0); transform: translate(-1px, -1px); }
+      60%  { clip: rect(10px, 9999px, 15px, 0); transform: translate(1px, 1px); }
+      80%  { clip: rect(30px, 9999px, 35px, 0); transform: translate(-1px, 1px); }
+      100% { clip: rect(5px, 9999px, 10px, 0); transform: translate(1px, -1px); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Canvas for radio noise effect -->
+  <canvas id="noiseCanvas"></canvas>
+  
+  <!-- Navigation bar -->
+  <nav>
+    <ul>
+      <li><a href="#">About</a></li>
+    </ul>
+  </nav>
+  
+  <!-- Centered content -->
+  <div class="container">
+    <div class="glitch" data-text="Benthal Networks">Benthal Networks</div>
+  </div>
+  
+  <script>
+    // Canvas noise effect using an offscreen canvas for larger, pixelated noise
+    const canvas = document.getElementById('noiseCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    
+    function generateNoise() {
+      const noiseScale = 1; // Reduced from 8 to 1 for smaller pixels
+      const noiseWidth = Math.ceil(canvas.width / noiseScale);
+      const noiseHeight = Math.ceil(canvas.height / noiseScale);
+      
+      // Create an offscreen canvas to generate pixelated noise
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = noiseWidth;
+      offCanvas.height = noiseHeight;
+      const offCtx = offCanvas.getContext('2d');
+      const imageData = offCtx.createImageData(noiseWidth, noiseHeight);
+      const data = imageData.data;
+      
+      for (let i = 0; i < data.length; i += 4) {
+        // Randomly decide between a darker gray and a slightly lighter pixel for more subtle contrast
+        const random = Math.random();
+        let shade;
+        if (random < 0.5) {
+          shade = 15; // Even darker noise pixel
+        } else {
+          shade = 50; // Slightly lighter but still dark noise pixel
+        }
+        data[i] = shade;     // Red
+        data[i+1] = shade;   // Green
+        data[i+2] = shade;   // Blue
+        data[i+3] = 40;      // Reduced alpha for more subtlety
+      }
+      offCtx.putImageData(imageData, 0, 0);
+      
+      // Disable smoothing to keep the sharp pixel effect
+      ctx.imageSmoothingEnabled = false;
+      // Draw the offscreen canvas scaled up to fill the viewport
+      ctx.drawImage(offCanvas, 0, 0, canvas.width, canvas.height);
+    }
+    
+    // Update noise every 100ms for a dynamic effect
+    setInterval(generateNoise, 100);
+    
+    // Glitch effect randomization for the centered text
+    const glitchElement = document.querySelector('.glitch');
+    function randomizeGlitch() {
+      const duration1 = (Math.random() * 0.5 + 1.5).toFixed(2);
+      const duration2 = (Math.random() * 0.5 + 2.5).toFixed(2);
+      glitchElement.style.setProperty('--glitch-duration-1', duration1 + 's');
+      glitchElement.style.setProperty('--glitch-duration-2', duration2 + 's');
+    }
+    setInterval(randomizeGlitch, 500);
+  </script>
+</body>
+</html>
